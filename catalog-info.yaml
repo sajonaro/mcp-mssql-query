@@ -1,0 +1,97 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: mcp-mssql-query
+  title: MCP MSSQL Query Server
+  description: Model Context Protocol server that enables Claude Desktop to query MSSQL databases safely with read-only operations
+  annotations:
+    backstage.io/source-location: url:https://dev.azure.com/InnovationLabInsart/Innovation%20Lab/_git/mcp-mssql-query
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - mcp
+    - mssql
+    - database
+    - claude
+    - python
+    - docker
+  links:
+    - url: https://dev.azure.com/InnovationLabInsart/Innovation%20Lab/_git/mcp-mssql-query
+      title: Source Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: experimental
+  owner: innovation-lab
+  system: ai-tools
+  providesApis:
+    - mcp-mssql-query-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: mcp-mssql-query-api
+  title: MCP MSSQL Query API
+  description: Model Context Protocol API for safe MSSQL database querying
+  tags:
+    - mcp
+    - mssql
+    - database
+spec:
+  type: mcp
+  lifecycle: experimental
+  owner: innovation-lab
+  system: ai-tools
+  definition: |
+    # MCP MSSQL Query Server API
+    
+    This MCP server provides the following tools:
+    
+    ## Tools
+    
+    ### execute_query
+    Execute a SELECT query on the SQL Server database. Only SELECT statements are allowed.
+    
+    **Parameters:**
+    - query (str): The SELECT SQL query to execute
+    
+    **Returns:**
+    - List[Dict[str, Any]]: Query results as list of dictionaries
+    
+    ### query_table
+    Query a non-system table or view with optional filtering.
+    
+    **Parameters:**
+    - table_name (str): Name of the table or view to query
+    - columns (Optional[str]): Comma-separated list of columns (default: "*")
+    - where_clause (Optional[str]): WHERE clause conditions
+    - limit (Optional[int]): Maximum number of rows to return
+    
+    **Returns:**
+    - List[Dict[str, Any]]: Query results as list of dictionaries
+    
+    ### get_tables
+    Get the list of non-system tables in the current database.
+    
+    **Returns:**
+    - List[Dict[str, Any]]: Table information including schema and name
+    
+    ### get_views
+    Get the list of non-system views in the current database.
+    
+    **Returns:**
+    - List[Dict[str, Any]]: View information including schema, name, and definition
+    
+    ## Security Features
+    - Read-only operations only (SELECT statements)
+    - Blocks DML/DDL operations (INSERT, UPDATE, DELETE, DROP, etc.)
+    - Filters out system tables and views
+    - SQL injection protection through query validation
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: ai-tools
+  title: AI Tools System
+  description: Collection of AI-related tools and services for development productivity
+spec:
+  owner: innovation-lab
