@@ -1,2 +1,2 @@
-wsl-bridge-mssql-query-mcp.sh
+invoke-mssql-query-mcp.sh
 .env
