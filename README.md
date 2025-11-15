@@ -1,6 +1,73 @@
 ## About
 
-This project builds an MCP server allowing CLAUDE desktop to query MSSQL database
+This project builds an MCP server allowing CLAUDE desktop application and other LLMs to query MSSQL database
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Claude Desktop / LLM Client                  │
+│                     (Windows/macOS/Linux)                           │
+└────────────────────────────────┬────────────────────────────────────┘
+                                 │
+                                 │ MCP Protocol (stdio)
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    invoke-mssql-query-mcp.sh                        │
+│                  (Container Lifecycle Manager)                      │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │ • Pulls/builds Docker image (ghcr.io/sajonaro/mcp-mssql-query)│  │
+│  │ • Starts container with auto-restart policy                   │  │
+│  │ • Connects to running container via stdio                     │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────┬────────────────────────────────────┘
+                                 │
+                                 │ Docker exec (stdio)
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      Docker Container                               │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │                    FastMCP Server (main.py)                   │  │
+│  │  ┌─────────────────────────────────────────────────────────┐  │  │
+│  │  │  MCP Tools:                                             │  │  │
+│  │  │  • execute_query() - Execute SELECT queries             │  │  │
+│  │  │  • query_table()   - Query tables with filters          │  │  │
+│  │  │  • get_tables()    - List database tables               │  │  │
+│  │  │  • get_views()     - List database views                │  │  │
+│  │  └─────────────────────────────────────────────────────────┘  │  │
+│  │                            │                                  │  │
+│  │                            │ pyodbc + FreeTDS ODBC Driver     │  │
+│  │                            ▼                                  │  │
+│  │  ┌─────────────────────────────────────────────────────────┐  │  │
+│  │  │  Connection Manager (.env config)                       │  │  │
+│  │  │  • MSSQL_SERVER, MSSQL_DATABASE                         │  │  │
+│  │  │  • MSSQL_USERNAME, MSSQL_PASSWORD                       │  │  │
+│  │  │  • SQL Injection Protection (SELECT-only validation)    │  │  │
+│  │  └─────────────────────────────────────────────────────────┘  │  │
+│  └─────────────────────────────── ───────────────────────────────┘  │
+└────────────────────────────────┬─ ──────────────────────────────────┘
+                                 │
+                                 │ TCP/IP (SQL Server Protocol)
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      MSSQL Database Server                          │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │  • Tables (INFORMATION_SCHEMA.TABLES)                         │  │
+│  │  • Views (INFORMATION_SCHEMA.VIEWS)                           │  │
+│  │  • Query Execution Engine                                     │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+
+Data Flow:
+  1. Claude Desktop sends MCP tool request via stdio
+  2. Invoke script routes request to Docker container
+  3. FastMCP server validates and executes SELECT-only queries
+  4. pyodbc connects to MSSQL using credentials from .env
+  5. Query results flow back through the same path to Claude
+```
 
 ## Configuration
 
