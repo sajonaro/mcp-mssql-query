@@ -1,4 +1,4 @@
-FROM python:3.11-slim as builder
+FROM python:3.13-slim AS builder
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -10,7 +10,7 @@ COPY pyproject.toml uv.lock ./
 COPY . .
 RUN uv sync --frozen
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Install ODBC driver and dependencies
 RUN apt-get update && apt-get install -y \
