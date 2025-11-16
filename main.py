@@ -16,6 +16,7 @@ mcp = FastMCP("MSSQL_Query_Server")
 def connect_to_db():
     """Connect to SQL Server database using SQL Server authentication"""
     server = os.getenv("MSSQL_SERVER")
+    port = os.getenv("MSSQL_PORT", "1433")
     database = os.getenv("MSSQL_DATABASE")
     username = os.getenv("MSSQL_USERNAME")
     password = os.getenv("MSSQL_PASSWORD")
@@ -30,13 +31,15 @@ def connect_to_db():
     if not password:
         raise ValueError("MSSQL_PASSWORD environment variable is required")
 
-    # Use SQL Server authentication only
+    # Use FreeTDS driver with port and TDS protocol version
     conn_string = (
-        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"DRIVER={{FreeTDS}};"
         f"SERVER={server};"
+        f"PORT={port};"
         f"DATABASE={database};"
         f"UID={username};"
         f"PWD={password};"
+        f"TDS_Version=7.4;"
         f"TrustServerCertificate=yes;"
     )
 
