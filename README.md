@@ -82,12 +82,14 @@ MSSQL_PASSWORD="your_password"
 
 ## How to run
 
+This section covers the **stdio transport** setup for Claude Desktop using `invoke-mssql-query-mcp.sh`. For HTTPS/SSE transport (remote access), see the "HTTPS Deployment" section below.
+
 The setup uses **lazy initialization** - the Docker container will be automatically pulled from GHCR and started the first time Claude Desktop uses it. No manual setup required!
 
 **Step 1**: Make the invoke script executable and copy to a well-known location:
 
 ```bash
-$ chmod +x invoke-mssql-query-mcp.sh && cp invoke-mssql-query-mcp.sh /usr/local/bin
+$ chmod +x scripts/invoke-mssql-query-mcp.sh && cp scripts/invoke-mssql-query-mcp.sh /usr/local/bin
 ```
 
 **Step 2**: Configure Claude Desktop by locating `claude_desktop_config.json` (typically at: `C:\Users\{YOUR_USER}\AppData\Roaming\Claude`) and add the MCP server configuration:
@@ -112,3 +114,52 @@ The first time you use the MCP server, the `invoke-mssql-query-mcp.sh` script wi
 - Connect to your MSSQL database using the `.env` configuration
 
 On subsequent uses, it will simply connect to the already-running container for instant response.
+
+## HTTPS Deployment (Remote Access)
+
+For remote access via HTTPS (e.g., web clients, remote MCP clients), use the included nginx reverse proxy setup:
+
+**Quick Start:**
+
+```bash
+# Generate SSL certificates (first time only)
+chmod +x scripts/generate-ssl-certs.sh
+./scripts/generate-ssl-certs.sh
+
+# Start HTTPS service
+chmod +x scripts/start-https-service.sh
+./scripts/start-https-service.sh
+```
+
+**Access URLs:**
+- HTTPS: `https://localhost/sse`
+- HTTP: `http://localhost/sse` (redirects to HTTPS)
+
+**Architecture:**
+```
+Client → nginx (HTTPS) → MCP Service (SSE transport) → MSSQL Database
+```
+
+**Key Files:**
+- `main_sse.py` - SSE transport wrapper (uses same code as stdio mode)
+- `docker-compose.https.yml` - Orchestrates MCP service + nginx
+- `nginx/nginx.conf` - HTTPS reverse proxy configuration
+- `certs/` - SSL certificates (self-signed for dev, replace for production)
+
+**Management:**
+```bash
+# View logs
+docker-compose -f docker-compose.https.yml logs -f
+
+# Stop service
+docker-compose -f docker-compose.https.yml down
+
+# Restart after changes
+docker-compose -f docker-compose.https.yml up --build -d
+```
+
+**Production Notes:**
+- Replace self-signed certificates with CA-signed certificates in `./certs/`
+- Update `server_name` in `nginx/nginx.conf` to your domain
+- Consider using Let's Encrypt for automated certificate management
+- The same Docker image supports both stdio (Claude Desktop) and HTTPS modes

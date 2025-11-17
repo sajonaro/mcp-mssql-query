@@ -1,2 +1,3 @@
 invoke-mssql-query-mcp.sh
 .env
+scripts 
